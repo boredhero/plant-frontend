@@ -4,7 +4,7 @@ import Hls from "hls.js";
 const STATUS_URL = "/api/cam/status";
 const TIMELAPSE_URL = "/api/timelapse";
 const INFO_URL = "/api/info";
-const FRONTEND_VERSION = "0.1.0";
+const FRONTEND_VERSION = __APP_VERSION__;
 
 function StatusDot({ status }) {
   const color = status === "live" ? "#22c55e" : status === "degraded" ? "#eab308" : status === "connecting" ? "#60a5fa" : "#ef4444";
@@ -198,7 +198,7 @@ export default function PlantCam() {
         <p style={{ fontSize: 12, color: "var(--text-sub)", margin: 0 }}>Soil moisture, temperature, and light sensors coming soon.</p>
       </div>
       <div style={{ marginTop: 16, fontSize: 10, color: "var(--text-muted)", textAlign: "right" }}>
-        frontend v{FRONTEND_VERSION}{backendVersion && ` / backend v${backendVersion}`}
+        {backendVersion && backendVersion === FRONTEND_VERSION ? `v${FRONTEND_VERSION}` : `frontend v${FRONTEND_VERSION}${backendVersion ? ` / backend v${backendVersion}` : ""}`}
       </div>
     </div>
   );
