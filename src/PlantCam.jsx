@@ -157,8 +157,8 @@ export default function PlantCam() {
               <span style={{ fontSize: 11, fontWeight: 600, color: "var(--text-sub)", marginBottom: 6, display: "block" }}>Weekly</span>
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                 {weeklyTL.map(tl => (
-                  <button key={tl.filename} onClick={() => setSelectedTL(selectedTL?.filename === tl.filename ? null : tl)} style={{ padding: "6px 12px", borderRadius: 8, border: selectedTL?.filename === tl.filename ? "2px solid var(--tab-active)" : "1px solid var(--chip-border)", background: selectedTL?.filename === tl.filename ? "var(--tab-active)" : "var(--tab-inactive)", color: selectedTL?.filename === tl.filename ? "var(--tab-active-text)" : "var(--tab-inactive-text)", fontSize: 12, fontWeight: 500, cursor: "pointer" }}>
-                    {tl.label} <span style={{ opacity: 0.6, fontSize: 10 }}>({tl.size_mb}MB)</span>
+                  <button key={tl.url} onClick={() => setSelectedTL(selectedTL?.url === tl.url ? null : tl)} style={{ padding: "6px 12px", borderRadius: 8, border: selectedTL?.url === tl.url ? "2px solid var(--tab-active)" : "1px solid var(--chip-border)", background: selectedTL?.url === tl.url ? "var(--tab-active)" : "var(--tab-inactive)", color: selectedTL?.url === tl.url ? "var(--tab-active-text)" : "var(--tab-inactive-text)", fontSize: 12, fontWeight: 500, cursor: "pointer" }}>
+                    {tl.cam && <span style={{ opacity: 0.5, fontSize: 10, marginRight: 4 }}>[{tl.cam}]</span>}{tl.label} <span style={{ opacity: 0.6, fontSize: 10 }}>({tl.size_mb}MB)</span>
                   </button>
                 ))}
               </div>
@@ -169,8 +169,8 @@ export default function PlantCam() {
               <span style={{ fontSize: 11, fontWeight: 600, color: "var(--text-sub)", marginBottom: 6, display: "block" }}>Daily</span>
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                 {dailyTL.map(tl => (
-                  <button key={tl.date} onClick={() => setSelectedTL(selectedTL?.date === tl.date ? null : tl)} style={{ padding: "6px 12px", borderRadius: 8, border: selectedTL?.date === tl.date ? "2px solid var(--tab-active)" : "1px solid var(--chip-border)", background: selectedTL?.date === tl.date ? "var(--tab-active)" : "var(--tab-inactive)", color: selectedTL?.date === tl.date ? "var(--tab-active-text)" : "var(--tab-inactive-text)", fontSize: 12, fontWeight: 500, cursor: "pointer" }}>
-                    {tl.date} <span style={{ opacity: 0.6, fontSize: 10 }}>({tl.size_mb}MB)</span>
+                  <button key={tl.url} onClick={() => setSelectedTL(selectedTL?.url === tl.url ? null : tl)} style={{ padding: "6px 12px", borderRadius: 8, border: selectedTL?.url === tl.url ? "2px solid var(--tab-active)" : "1px solid var(--chip-border)", background: selectedTL?.url === tl.url ? "var(--tab-active)" : "var(--tab-inactive)", color: selectedTL?.url === tl.url ? "var(--tab-active-text)" : "var(--tab-inactive-text)", fontSize: 12, fontWeight: 500, cursor: "pointer" }}>
+                    {tl.cam && <span style={{ opacity: 0.5, fontSize: 10, marginRight: 4 }}>[{tl.cam}]</span>}{tl.date} <span style={{ opacity: 0.6, fontSize: 10 }}>({tl.size_mb}MB)</span>
                   </button>
                 ))}
               </div>
