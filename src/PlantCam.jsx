@@ -206,9 +206,10 @@ export default function PlantCam() {
       </div>
       <div style={{ marginTop: 16, fontSize: 10, color: "var(--text-muted)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <span>
-          <a href="https://github.com/boredhero/plant-frontend" target="_blank" rel="noopener noreferrer" style={{ color: "var(--text-muted)", textDecoration: "none" }}>frontend</a>
+          {"source: "}
+          <a href="https://github.com/boredhero/plant-frontend" target="_blank" rel="noopener noreferrer" style={{ color: "var(--text-muted)", textDecoration: "underline", textUnderlineOffset: 2 }}>frontend</a>
           {" / "}
-          <a href="https://github.com/boredhero/plant-backend" target="_blank" rel="noopener noreferrer" style={{ color: "var(--text-muted)", textDecoration: "none" }}>backend</a>
+          <a href="https://github.com/boredhero/plant-backend" target="_blank" rel="noopener noreferrer" style={{ color: "var(--text-muted)", textDecoration: "underline", textUnderlineOffset: 2 }}>backend</a>
         </span>
         {backendVersion && <span>v{backendVersion}</span>}
       </div>
