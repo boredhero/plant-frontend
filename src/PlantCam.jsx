@@ -1,8 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import Hls from "hls.js";
 
-const HLS_URL = "/cam/hls/stream.m3u8";
-const SNAPSHOT_URL = "/cam/snapshot";
 const STATUS_URL = "/api/cam/status";
 const TIMELAPSE_URL = "/api/timelapse";
 
@@ -17,7 +15,7 @@ function StatusDot({ status }) {
   );
 }
 
-function HLSPlayer({ onStatusChange }) {
+function HLSPlayer({ hlsUrl, snapshotUrl, onStatusChange }) {
   const videoRef = useRef(null);
   const hlsRef = useRef(null);
   const [error, setError] = useState(null);
@@ -25,14 +23,11 @@ function HLSPlayer({ onStatusChange }) {
   const initHls = useCallback(() => {
     const video = videoRef.current;
     if (!video) return;
-    if (hlsRef.current) {
-      hlsRef.current.destroy();
-      hlsRef.current = null;
-    }
+    if (hlsRef.current) { clearInterval(hlsRef.current._liveCheckInterval); hlsRef.current.destroy(); hlsRef.current = null; }
     setError(null);
     setLoading(true);
     if (video.canPlayType("application/vnd.apple.mpegurl")) {
-      video.src = HLS_URL;
+      video.src = hlsUrl;
       video.addEventListener("loadeddata", () => { setLoading(false); onStatusChange?.("live"); }, { once: true });
       video.addEventListener("error", () => { setError("stream_error"); setLoading(false); onStatusChange?.("offline"); }, { once: true });
       video.play().catch(() => {});
@@ -45,24 +40,14 @@ function HLSPlayer({ onStatusChange }) {
     }
     const hls = new Hls({ liveSyncDurationCount: 3, liveMaxLatencyDurationCount: 8, liveDurationInfinity: true, maxBufferLength: 30, maxMaxBufferLength: 60, maxBufferSize: 30 * 1024 * 1024, enableWorker: true, lowLatencyMode: false, backBufferLength: 2, startFragPrefetch: true, fragLoadingMaxRetry: 6, fragLoadingRetryDelay: 500, manifestLoadingMaxRetry: 6, levelLoadingMaxRetry: 6 });
     hlsRef.current = hls;
-    hls.loadSource(HLS_URL);
+    hls.loadSource(hlsUrl);
     hls.attachMedia(video);
     hls.on(Hls.Events.MANIFEST_PARSED, () => { setLoading(false); onStatusChange?.("live"); video.play().catch(() => {}); });
     hls.on(Hls.Events.ERROR, (_event, data) => {
-      if (data.details === "fragLoadError" || data.details === "fragLoadTimeOut") {
-        hls.startLoad();
-        return;
-      }
+      if (data.details === "fragLoadError" || data.details === "fragLoadTimeOut") { hls.startLoad(); return; }
       if (data.fatal) {
-        if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
-          hls.recoverMediaError();
-          return;
-        }
-        if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
-          hls.startLoad();
-          setTimeout(() => { if (hlsRef.current === hls) initHls(); }, 10000);
-          return;
-        }
+        if (data.type === Hls.ErrorTypes.MEDIA_ERROR) { hls.recoverMediaError(); return; }
+        if (data.type === Hls.ErrorTypes.NETWORK_ERROR) { hls.startLoad(); setTimeout(() => { if (hlsRef.current === hls) initHls(); }, 10000); return; }
         setError("stream_error");
         setLoading(false);
         onStatusChange?.("offline");
@@ -75,7 +60,7 @@ function HLSPlayer({ onStatusChange }) {
       if (drift > 10) { video.currentTime = hls.liveSyncPosition; video.play().catch(() => {}); }
     }, 5000);
     hls._liveCheckInterval = liveCheck;
-  }, [onStatusChange]);
+  }, [hlsUrl, onStatusChange]);
   useEffect(() => {
     initHls();
     return () => { if (hlsRef.current) { clearInterval(hlsRef.current._liveCheckInterval); hlsRef.current.destroy(); } };
@@ -84,7 +69,7 @@ function HLSPlayer({ onStatusChange }) {
     return (
       <div style={{ background: "var(--card-alt)", borderRadius: 12, padding: 20, textAlign: "center" }}>
         <p style={{ color: "var(--text-sub)", fontSize: 13 }}>HLS not supported in this browser. Showing latest snapshot instead.</p>
-        <img src={SNAPSHOT_URL} alt="Latest snapshot" style={{ maxWidth: "100%", borderRadius: 8, marginTop: 10 }} />
+        {snapshotUrl && <img src={snapshotUrl} alt="Latest snapshot" style={{ maxWidth: "100%", borderRadius: 8, marginTop: 10 }} />}
       </div>
     );
   }
@@ -99,7 +84,7 @@ function HLSPlayer({ onStatusChange }) {
         <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.8)", zIndex: 2, gap: 10 }}>
           <span style={{ color: "#f87171", fontSize: 14, fontWeight: 600 }}>Stream unavailable</span>
           <button onClick={initHls} style={{ background: "var(--tab-active)", color: "var(--tab-active-text)", border: "none", borderRadius: 8, padding: "8px 16px", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Retry</button>
-          <img src={SNAPSHOT_URL} alt="Latest snapshot" style={{ maxWidth: "80%", borderRadius: 8, marginTop: 8, opacity: 0.7 }} onError={(e) => { e.target.style.display = "none"; }} />
+          {snapshotUrl && <img src={snapshotUrl} alt="Latest snapshot" style={{ maxWidth: "80%", borderRadius: 8, marginTop: 8, opacity: 0.7 }} onError={(e) => { e.target.style.display = "none"; }} />}
         </div>
       )}
       <video ref={videoRef} muted autoPlay playsInline style={{ width: "100%", display: "block", borderRadius: 12 }} />
@@ -107,7 +92,13 @@ function HLSPlayer({ onStatusChange }) {
   );
 }
 
+const CAMERAS = [
+  { id: 1, label: "Cam 1", hlsUrl: "/cam/hls/stream.m3u8", snapshotUrl: "/cam/snapshot" },
+  { id: 2, label: "Cam 2", hlsUrl: "/cam2/hls/stream.m3u8", snapshotUrl: "/cam2/snapshot" },
+];
+
 export default function PlantCam() {
+  const [activeCam, setActiveCam] = useState(CAMERAS[0]);
   const [streamStatus, setStreamStatus] = useState("offline");
   const [camStatus, setCamStatus] = useState(null);
   const [dailyTL, setDailyTL] = useState([]);
@@ -130,7 +121,16 @@ export default function PlantCam() {
         <h2 style={{ fontSize: 16, fontWeight: 700, color: "var(--text-bold)", margin: 0 }}>Plant Cam</h2>
         <StatusDot status={camStatus?.overall || streamStatus} />
       </div>
-      <HLSPlayer onStatusChange={setStreamStatus} />
+      {CAMERAS.length > 1 && (
+        <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
+          {CAMERAS.map(cam => (
+            <button key={cam.id} onClick={() => { setActiveCam(cam); setStreamStatus("offline"); }} style={{ padding: "5px 14px", borderRadius: 8, border: activeCam.id === cam.id ? "2px solid var(--tab-active)" : "1px solid var(--chip-border)", background: activeCam.id === cam.id ? "var(--tab-active)" : "var(--tab-inactive)", color: activeCam.id === cam.id ? "var(--tab-active-text)" : "var(--tab-inactive-text)", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
+              {cam.label}
+            </button>
+          ))}
+        </div>
+      )}
+      <HLSPlayer key={activeCam.id} hlsUrl={activeCam.hlsUrl} snapshotUrl={activeCam.snapshotUrl} onStatusChange={setStreamStatus} />
       {camStatus && (
         <div style={{ display: "flex", gap: 10, marginTop: 12, flexWrap: "wrap" }}>
           {camStatus.hls && (
