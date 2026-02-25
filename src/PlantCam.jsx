@@ -200,9 +200,9 @@ export default function PlantCam() {
           )}
         </div>
       )}
-      <div style={{ marginTop: 20, background: "var(--card)", border: "1px solid var(--border)", borderRadius: 12, padding: 16 }}>
-        <h3 style={{ fontSize: 14, fontWeight: 700, color: "var(--text-bold)", marginBottom: 8 }}>Sensor Readings</h3>
-        <p style={{ fontSize: 12, color: "var(--text-sub)", margin: 0 }}>Soil moisture, temperature, and light sensors coming soon.</p>
+      <div style={{ marginTop: 20, background: "var(--card)", border: "1px solid var(--border)", borderRadius: 12, padding: 16, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: 80 }}>
+        <h3 style={{ fontSize: 14, fontWeight: 700, color: "var(--text-bold)", marginBottom: 4, margin: 0 }}>Sensor Readings</h3>
+        <p style={{ fontSize: 12, color: "var(--text-sub)", margin: "4px 0 0 0" }}>Soil moisture, temperature, and light sensors coming soon.</p>
       </div>
       <div style={{ marginTop: 16, fontSize: 10, color: "var(--text-muted)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <span>
