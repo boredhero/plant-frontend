@@ -43,12 +43,17 @@ function HLSPlayer({ onStatusChange }) {
       setLoading(false);
       return;
     }
-    const hls = new Hls({ liveSyncDurationCount: 3, liveMaxLatencyDurationCount: 10, liveDurationInfinity: true, maxBufferLength: 30, maxMaxBufferLength: 60, maxBufferSize: 30 * 1024 * 1024, enableWorker: true, lowLatencyMode: false, backBufferLength: 30, startFragPrefetch: true, fragLoadingMaxRetry: 6, fragLoadingRetryDelay: 500, manifestLoadingMaxRetry: 6, levelLoadingMaxRetry: 6 });
+    const hls = new Hls({ liveSyncDurationCount: 3, liveMaxLatencyDurationCount: 8, liveDurationInfinity: true, maxBufferLength: 30, maxMaxBufferLength: 60, maxBufferSize: 30 * 1024 * 1024, enableWorker: true, lowLatencyMode: false, backBufferLength: 10, startFragPrefetch: true, fragLoadingMaxRetry: 6, fragLoadingRetryDelay: 500, manifestLoadingMaxRetry: 6, levelLoadingMaxRetry: 6 });
     hlsRef.current = hls;
     hls.loadSource(HLS_URL);
     hls.attachMedia(video);
+    const jumpToLive = () => { if (hls.liveSyncPosition && isFinite(hls.liveSyncPosition)) { video.currentTime = hls.liveSyncPosition; } };
     hls.on(Hls.Events.MANIFEST_PARSED, () => { setLoading(false); onStatusChange?.("live"); video.play().catch(() => {}); });
     hls.on(Hls.Events.ERROR, (_event, data) => {
+      if (data.details === "fragLoadError" || data.details === "fragLoadTimeOut") {
+        jumpToLive();
+        return;
+      }
       if (data.fatal) {
         if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
           hls.recoverMediaError();
@@ -56,6 +61,7 @@ function HLSPlayer({ onStatusChange }) {
         }
         if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
           hls.startLoad();
+          jumpToLive();
           setTimeout(() => { if (hlsRef.current === hls) initHls(); }, 8000);
           return;
         }
@@ -64,25 +70,17 @@ function HLSPlayer({ onStatusChange }) {
         onStatusChange?.("offline");
       }
     });
-    let stallCount = 0;
-    video.addEventListener("waiting", () => {
-      stallCount++;
-      if (stallCount > 3 && hls.media) {
-        const buffered = hls.media.buffered;
-        if (buffered.length > 0) {
-          const pos = hls.media.currentTime;
-          for (let i = 0; i < buffered.length; i++) {
-            if (buffered.start(i) > pos && buffered.start(i) - pos < 2) { hls.media.currentTime = buffered.start(i) + 0.1; break; }
-          }
-        }
-        stallCount = 0;
-      }
-    });
-    video.addEventListener("playing", () => { stallCount = 0; });
+    video.addEventListener("waiting", () => { jumpToLive(); video.play().catch(() => {}); });
+    const liveCheck = setInterval(() => {
+      if (!hls.liveSyncPosition || !isFinite(hls.liveSyncPosition)) return;
+      if (video.paused) { video.play().catch(() => {}); }
+      if (hls.liveSyncPosition - video.currentTime > 10) { jumpToLive(); }
+    }, 5000);
+    hls._liveCheckInterval = liveCheck;
   }, [onStatusChange]);
   useEffect(() => {
     initHls();
-    return () => { if (hlsRef.current) hlsRef.current.destroy(); };
+    return () => { if (hlsRef.current) { clearInterval(hlsRef.current._liveCheckInterval); hlsRef.current.destroy(); } };
   }, [initHls]);
   if (error === "hls_unsupported") {
     return (
