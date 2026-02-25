@@ -47,12 +47,6 @@ function HLSPlayer({ onStatusChange }) {
     hlsRef.current = hls;
     hls.loadSource(HLS_URL);
     hls.attachMedia(video);
-    let lastJump = 0;
-    const jumpToLive = (force) => {
-      const now = Date.now();
-      if (!force && now - lastJump < 3000) return;
-      if (hls.liveSyncPosition && isFinite(hls.liveSyncPosition)) { lastJump = now; video.currentTime = hls.liveSyncPosition; }
-    };
     hls.on(Hls.Events.MANIFEST_PARSED, () => { setLoading(false); onStatusChange?.("live"); video.play().catch(() => {}); });
     hls.on(Hls.Events.ERROR, (_event, data) => {
       if (data.details === "fragLoadError" || data.details === "fragLoadTimeOut") {
@@ -66,7 +60,7 @@ function HLSPlayer({ onStatusChange }) {
         }
         if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
           hls.startLoad();
-          setTimeout(() => { if (hlsRef.current === hls) initHls(); }, 8000);
+          setTimeout(() => { if (hlsRef.current === hls) initHls(); }, 10000);
           return;
         }
         setError("stream_error");
@@ -74,14 +68,12 @@ function HLSPlayer({ onStatusChange }) {
         onStatusChange?.("offline");
       }
     });
-    let stallCount = 0;
-    video.addEventListener("waiting", () => { stallCount++; if (stallCount >= 3) { jumpToLive(); stallCount = 0; } });
-    video.addEventListener("playing", () => { stallCount = 0; });
     const liveCheck = setInterval(() => {
       if (!hls.liveSyncPosition || !isFinite(hls.liveSyncPosition)) return;
       if (video.paused) { video.play().catch(() => {}); }
-      if (hls.liveSyncPosition - video.currentTime > 8) { jumpToLive(true); }
-    }, 3000);
+      const drift = hls.liveSyncPosition - video.currentTime;
+      if (drift > 10) { video.currentTime = hls.liveSyncPosition; video.play().catch(() => {}); }
+    }, 5000);
     hls._liveCheckInterval = liveCheck;
   }, [onStatusChange]);
   useEffect(() => {
