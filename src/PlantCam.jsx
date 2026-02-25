@@ -5,8 +5,8 @@ const STATUS_URL = "/api/cam/status";
 const TIMELAPSE_URL = "/api/timelapse";
 
 function StatusDot({ status }) {
-  const color = status === "live" ? "#22c55e" : status === "degraded" ? "#eab308" : "#ef4444";
-  const label = status === "live" ? "Stream Live" : status === "degraded" ? "Camera Only" : "Offline";
+  const color = status === "live" ? "#22c55e" : status === "degraded" ? "#eab308" : status === "connecting" ? "#60a5fa" : "#ef4444";
+  const label = status === "live" ? "Stream Live" : status === "degraded" ? "Camera Only" : status === "connecting" ? "Connecting..." : "Offline";
   return (
     <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 600 }}>
       <span style={{ width: 10, height: 10, borderRadius: "50%", background: color, display: "inline-block", boxShadow: status === "live" ? `0 0 6px ${color}` : "none" }} />
@@ -48,9 +48,10 @@ function HLSPlayer({ hlsUrl, snapshotUrl, onStatusChange }) {
       if (data.fatal) {
         if (data.type === Hls.ErrorTypes.MEDIA_ERROR) { hls.recoverMediaError(); return; }
         if (data.type === Hls.ErrorTypes.NETWORK_ERROR) { hls.startLoad(); setTimeout(() => { if (hlsRef.current === hls) initHls(); }, 10000); return; }
-        setError("stream_error");
+        setError("reconnect");
         setLoading(false);
         onStatusChange?.("offline");
+        setTimeout(() => { if (hlsRef.current === hls) initHls(); }, 5000);
       }
     });
     const liveCheck = setInterval(() => {
@@ -82,8 +83,8 @@ function HLSPlayer({ hlsUrl, snapshotUrl, onStatusChange }) {
       )}
       {error && (
         <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.8)", zIndex: 2, gap: 10 }}>
-          <span style={{ color: "#f87171", fontSize: 14, fontWeight: 600 }}>Stream unavailable</span>
-          <button onClick={initHls} style={{ background: "var(--tab-active)", color: "var(--tab-active-text)", border: "none", borderRadius: 8, padding: "8px 16px", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Retry</button>
+          <span style={{ color: error === "reconnect" ? "#fbbf24" : "#f87171", fontSize: 14, fontWeight: 600 }}>{error === "reconnect" ? "Reconnecting..." : "Stream unavailable"}</span>
+          <button onClick={initHls} style={{ background: "var(--tab-active)", color: "var(--tab-active-text)", border: "none", borderRadius: 8, padding: "8px 16px", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>{error === "reconnect" ? "Reconnect Now" : "Retry"}</button>
           {snapshotUrl && <img src={snapshotUrl} alt="Latest snapshot" style={{ maxWidth: "80%", borderRadius: 8, marginTop: 8, opacity: 0.7 }} onError={(e) => { e.target.style.display = "none"; }} />}
         </div>
       )}
@@ -99,7 +100,7 @@ const CAMERAS = [
 
 export default function PlantCam() {
   const [activeCam, setActiveCam] = useState(CAMERAS[0]);
-  const [streamStatus, setStreamStatus] = useState("offline");
+  const [streamStatus, setStreamStatus] = useState("connecting");
   const [camStatus, setCamStatus] = useState(null);
   const [dailyTL, setDailyTL] = useState([]);
   const [weeklyTL, setWeeklyTL] = useState([]);
@@ -124,7 +125,7 @@ export default function PlantCam() {
       {CAMERAS.length > 1 && (
         <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
           {CAMERAS.map(cam => (
-            <button key={cam.id} onClick={() => { setActiveCam(cam); setStreamStatus("offline"); }} style={{ padding: "5px 14px", borderRadius: 8, border: activeCam.id === cam.id ? "2px solid var(--tab-active)" : "1px solid var(--chip-border)", background: activeCam.id === cam.id ? "var(--tab-active)" : "var(--tab-inactive)", color: activeCam.id === cam.id ? "var(--tab-active-text)" : "var(--tab-inactive-text)", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
+            <button key={cam.id} onClick={() => { setActiveCam(cam); setStreamStatus("connecting"); }} style={{ padding: "5px 14px", borderRadius: 8, border: activeCam.id === cam.id ? "2px solid var(--tab-active)" : "1px solid var(--chip-border)", background: activeCam.id === cam.id ? "var(--tab-active)" : "var(--tab-inactive)", color: activeCam.id === cam.id ? "var(--tab-active-text)" : "var(--tab-inactive-text)", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
               {cam.label}
             </button>
           ))}
@@ -156,8 +157,8 @@ export default function PlantCam() {
               <span style={{ fontSize: 11, fontWeight: 600, color: "var(--text-sub)", marginBottom: 6, display: "block" }}>Weekly</span>
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                 {weeklyTL.map(tl => (
-                  <button key={tl.filename} onClick={() => setSelectedTL(selectedTL?.filename === tl.filename ? null : tl)} style={{ padding: "6px 12px", borderRadius: 8, border: selectedTL?.filename === tl.filename ? "2px solid var(--tab-active)" : "1px solid var(--chip-border)", background: selectedTL?.filename === tl.filename ? "var(--tab-active)" : "var(--tab-inactive)", color: selectedTL?.filename === tl.filename ? "var(--tab-active-text)" : "var(--tab-inactive-text)", fontSize: 12, fontWeight: 500, cursor: "pointer" }}>
-                    {tl.label} <span style={{ opacity: 0.6, fontSize: 10 }}>({tl.size_mb}MB)</span>
+                  <button key={tl.url} onClick={() => setSelectedTL(selectedTL?.url === tl.url ? null : tl)} style={{ padding: "6px 12px", borderRadius: 8, border: selectedTL?.url === tl.url ? "2px solid var(--tab-active)" : "1px solid var(--chip-border)", background: selectedTL?.url === tl.url ? "var(--tab-active)" : "var(--tab-inactive)", color: selectedTL?.url === tl.url ? "var(--tab-active-text)" : "var(--tab-inactive-text)", fontSize: 12, fontWeight: 500, cursor: "pointer" }}>
+                    {tl.cam && <span style={{ opacity: 0.5, fontSize: 10, marginRight: 4 }}>[{tl.cam}]</span>}{tl.label} <span style={{ opacity: 0.6, fontSize: 10 }}>({tl.size_mb}MB)</span>
                   </button>
                 ))}
               </div>
@@ -168,8 +169,8 @@ export default function PlantCam() {
               <span style={{ fontSize: 11, fontWeight: 600, color: "var(--text-sub)", marginBottom: 6, display: "block" }}>Daily</span>
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                 {dailyTL.map(tl => (
-                  <button key={tl.date} onClick={() => setSelectedTL(selectedTL?.date === tl.date ? null : tl)} style={{ padding: "6px 12px", borderRadius: 8, border: selectedTL?.date === tl.date ? "2px solid var(--tab-active)" : "1px solid var(--chip-border)", background: selectedTL?.date === tl.date ? "var(--tab-active)" : "var(--tab-inactive)", color: selectedTL?.date === tl.date ? "var(--tab-active-text)" : "var(--tab-inactive-text)", fontSize: 12, fontWeight: 500, cursor: "pointer" }}>
-                    {tl.date} <span style={{ opacity: 0.6, fontSize: 10 }}>({tl.size_mb}MB)</span>
+                  <button key={tl.url} onClick={() => setSelectedTL(selectedTL?.url === tl.url ? null : tl)} style={{ padding: "6px 12px", borderRadius: 8, border: selectedTL?.url === tl.url ? "2px solid var(--tab-active)" : "1px solid var(--chip-border)", background: selectedTL?.url === tl.url ? "var(--tab-active)" : "var(--tab-inactive)", color: selectedTL?.url === tl.url ? "var(--tab-active-text)" : "var(--tab-inactive-text)", fontSize: 12, fontWeight: 500, cursor: "pointer" }}>
+                    {tl.cam && <span style={{ opacity: 0.5, fontSize: 10, marginRight: 4 }}>[{tl.cam}]</span>}{tl.date} <span style={{ opacity: 0.6, fontSize: 10 }}>({tl.size_mb}MB)</span>
                   </button>
                 ))}
               </div>
