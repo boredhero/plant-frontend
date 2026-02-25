@@ -47,11 +47,16 @@ function HLSPlayer({ onStatusChange }) {
     hlsRef.current = hls;
     hls.loadSource(HLS_URL);
     hls.attachMedia(video);
-    const jumpToLive = () => { if (hls.liveSyncPosition && isFinite(hls.liveSyncPosition)) { video.currentTime = hls.liveSyncPosition; } };
+    let lastJump = 0;
+    const jumpToLive = (force) => {
+      const now = Date.now();
+      if (!force && now - lastJump < 3000) return;
+      if (hls.liveSyncPosition && isFinite(hls.liveSyncPosition)) { lastJump = now; video.currentTime = hls.liveSyncPosition; }
+    };
     hls.on(Hls.Events.MANIFEST_PARSED, () => { setLoading(false); onStatusChange?.("live"); video.play().catch(() => {}); });
     hls.on(Hls.Events.ERROR, (_event, data) => {
       if (data.details === "fragLoadError" || data.details === "fragLoadTimeOut") {
-        jumpToLive();
+        hls.startLoad();
         return;
       }
       if (data.fatal) {
@@ -61,7 +66,6 @@ function HLSPlayer({ onStatusChange }) {
         }
         if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
           hls.startLoad();
-          jumpToLive();
           setTimeout(() => { if (hlsRef.current === hls) initHls(); }, 8000);
           return;
         }
@@ -70,12 +74,14 @@ function HLSPlayer({ onStatusChange }) {
         onStatusChange?.("offline");
       }
     });
-    video.addEventListener("waiting", () => { jumpToLive(); video.play().catch(() => {}); });
+    let stallCount = 0;
+    video.addEventListener("waiting", () => { stallCount++; if (stallCount >= 3) { jumpToLive(); stallCount = 0; } });
+    video.addEventListener("playing", () => { stallCount = 0; });
     const liveCheck = setInterval(() => {
       if (!hls.liveSyncPosition || !isFinite(hls.liveSyncPosition)) return;
       if (video.paused) { video.play().catch(() => {}); }
-      if (hls.liveSyncPosition - video.currentTime > 10) { jumpToLive(); }
-    }, 5000);
+      if (hls.liveSyncPosition - video.currentTime > 8) { jumpToLive(true); }
+    }, 3000);
     hls._liveCheckInterval = liveCheck;
   }, [onStatusChange]);
   useEffect(() => {
