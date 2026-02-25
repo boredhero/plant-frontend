@@ -109,9 +109,14 @@ export default function PlantCam() {
   const [weeklyTL, setWeeklyTL] = useState([]);
   const [selectedTL, setSelectedTL] = useState(null);
   const [resetting, setResetting] = useState(false);
+  const [resetMsg, setResetMsg] = useState(null);
   const resetStream = () => {
     setResetting(true);
-    fetch(`/api/cam/reset/${activeCam.id}`, { method: "POST" }).then(() => { setTimeout(() => { setResetting(false); setStreamStatus("connecting"); }, 3000); }).catch(() => setResetting(false));
+    setResetMsg(null);
+    fetch(`/api/cam/reset/${activeCam.id}`, { method: "POST" }).then(r => {
+      if (r.status === 429) { return r.json().then(data => { setResetMsg(data.message); setResetting(false); }); }
+      setTimeout(() => { setResetting(false); setStreamStatus("connecting"); }, 3000);
+    }).catch(() => setResetting(false));
   };
   useEffect(() => {
     const fetchStatus = () => {
@@ -139,9 +144,12 @@ export default function PlantCam() {
             {cam.label}
           </button>
         ))}
-        <button onClick={resetStream} disabled={resetting} style={{ padding: "5px 10px", borderRadius: 8, border: "1px solid var(--chip-border)", background: "var(--tab-inactive)", color: "var(--tab-inactive-text)", fontSize: 11, fontWeight: 500, cursor: resetting ? "wait" : "pointer", opacity: resetting ? 0.5 : 0.7, marginLeft: "auto" }}>
-          {resetting ? "Resetting..." : "Reset Stream"}
-        </button>
+        <span style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8 }}>
+          {resetMsg && <span style={{ fontSize: 10, color: "#f87171" }}>{resetMsg}</span>}
+          <button onClick={resetStream} disabled={resetting} style={{ padding: "5px 10px", borderRadius: 8, border: "1px solid var(--chip-border)", background: "var(--tab-inactive)", color: "var(--tab-inactive-text)", fontSize: 11, fontWeight: 500, cursor: resetting ? "wait" : "pointer", opacity: resetting ? 0.5 : 0.7 }}>
+            {resetting ? "Resetting..." : "Reset Stream"}
+          </button>
+        </span>
       </div>
       <HLSPlayer key={activeCam.id} hlsUrl={activeCam.hlsUrl} snapshotUrl={activeCam.snapshotUrl} onStatusChange={setStreamStatus} />
       {camStatus && (
@@ -197,8 +205,13 @@ export default function PlantCam() {
         <h3 style={{ fontSize: 14, fontWeight: 700, color: "var(--text-bold)", marginBottom: 8 }}>Sensor Readings</h3>
         <p style={{ fontSize: 12, color: "var(--text-sub)", margin: 0 }}>Soil moisture, temperature, and light sensors coming soon.</p>
       </div>
-      <div style={{ marginTop: 16, fontSize: 10, color: "var(--text-muted)", textAlign: "right" }}>
-        {backendVersion && backendVersion === FRONTEND_VERSION ? `v${FRONTEND_VERSION}` : `frontend v${FRONTEND_VERSION}${backendVersion ? ` / backend v${backendVersion}` : ""}`}
+      <div style={{ marginTop: 16, fontSize: 10, color: "var(--text-muted)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <span>
+          <a href="https://github.com/boredhero/plant-frontend" target="_blank" rel="noopener noreferrer" style={{ color: "var(--text-muted)", textDecoration: "none" }}>frontend</a>
+          {" / "}
+          <a href="https://github.com/boredhero/plant-backend" target="_blank" rel="noopener noreferrer" style={{ color: "var(--text-muted)", textDecoration: "none" }}>backend</a>
+        </span>
+        <span>{backendVersion && backendVersion === FRONTEND_VERSION ? `v${FRONTEND_VERSION}` : `frontend v${FRONTEND_VERSION}${backendVersion ? ` / backend v${backendVersion}` : ""}`}</span>
       </div>
     </div>
   );
