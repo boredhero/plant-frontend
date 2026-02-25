@@ -43,7 +43,7 @@ function HLSPlayer({ onStatusChange }) {
       setLoading(false);
       return;
     }
-    const hls = new Hls({ liveSyncDurationCount: 3, liveMaxLatencyDurationCount: 6, enableWorker: true, lowLatencyMode: false });
+    const hls = new Hls({ liveSyncDurationCount: 5, liveMaxLatencyDurationCount: 15, liveDurationInfinity: true, maxBufferLength: 30, maxMaxBufferLength: 60, maxBufferSize: 30 * 1024 * 1024, enableWorker: true, lowLatencyMode: false, backBufferLength: 30 });
     hlsRef.current = hls;
     hls.loadSource(HLS_URL);
     hls.attachMedia(video);
