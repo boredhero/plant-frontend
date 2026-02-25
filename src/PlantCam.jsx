@@ -3,6 +3,8 @@ import Hls from "hls.js";
 
 const STATUS_URL = "/api/cam/status";
 const TIMELAPSE_URL = "/api/timelapse";
+const INFO_URL = "/api/info";
+const FRONTEND_VERSION = "0.1.0";
 
 function StatusDot({ status }) {
   const color = status === "live" ? "#22c55e" : status === "degraded" ? "#eab308" : status === "connecting" ? "#60a5fa" : "#ef4444";
@@ -102,9 +104,15 @@ export default function PlantCam() {
   const [activeCam, setActiveCam] = useState(CAMERAS[0]);
   const [streamStatus, setStreamStatus] = useState("connecting");
   const [camStatus, setCamStatus] = useState(null);
+  const [backendVersion, setBackendVersion] = useState(null);
   const [dailyTL, setDailyTL] = useState([]);
   const [weeklyTL, setWeeklyTL] = useState([]);
   const [selectedTL, setSelectedTL] = useState(null);
+  const [resetting, setResetting] = useState(false);
+  const resetStream = () => {
+    setResetting(true);
+    fetch(`/api/cam/reset/${activeCam.id}`, { method: "POST" }).then(() => { setTimeout(() => { setResetting(false); setStreamStatus("connecting"); }, 3000); }).catch(() => setResetting(false));
+  };
   useEffect(() => {
     const fetchStatus = () => {
       fetch(STATUS_URL).then(r => r.json()).then(data => setCamStatus(data)).catch(() => {});
@@ -112,6 +120,9 @@ export default function PlantCam() {
     fetchStatus();
     const interval = setInterval(fetchStatus, 15000);
     return () => clearInterval(interval);
+  }, []);
+  useEffect(() => {
+    fetch(INFO_URL).then(r => r.json()).then(data => setBackendVersion(data.version)).catch(() => {});
   }, []);
   useEffect(() => {
     fetch(TIMELAPSE_URL).then(r => r.json()).then(data => { setDailyTL(data.daily || []); setWeeklyTL(data.weekly || []); }).catch(() => {});
@@ -122,15 +133,16 @@ export default function PlantCam() {
         <h2 style={{ fontSize: 16, fontWeight: 700, color: "var(--text-bold)", margin: 0 }}>Plant Cam</h2>
         <StatusDot status={camStatus?.overall || streamStatus} />
       </div>
-      {CAMERAS.length > 1 && (
-        <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
-          {CAMERAS.map(cam => (
-            <button key={cam.id} onClick={() => { setActiveCam(cam); setStreamStatus("connecting"); }} style={{ padding: "5px 14px", borderRadius: 8, border: activeCam.id === cam.id ? "2px solid var(--tab-active)" : "1px solid var(--chip-border)", background: activeCam.id === cam.id ? "var(--tab-active)" : "var(--tab-inactive)", color: activeCam.id === cam.id ? "var(--tab-active-text)" : "var(--tab-inactive-text)", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
-              {cam.label}
-            </button>
-          ))}
-        </div>
-      )}
+      <div style={{ display: "flex", gap: 6, marginBottom: 10, alignItems: "center" }}>
+        {CAMERAS.length > 1 && CAMERAS.map(cam => (
+          <button key={cam.id} onClick={() => { setActiveCam(cam); setStreamStatus("connecting"); }} style={{ padding: "5px 14px", borderRadius: 8, border: activeCam.id === cam.id ? "2px solid var(--tab-active)" : "1px solid var(--chip-border)", background: activeCam.id === cam.id ? "var(--tab-active)" : "var(--tab-inactive)", color: activeCam.id === cam.id ? "var(--tab-active-text)" : "var(--tab-inactive-text)", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
+            {cam.label}
+          </button>
+        ))}
+        <button onClick={resetStream} disabled={resetting} style={{ padding: "5px 10px", borderRadius: 8, border: "1px solid var(--chip-border)", background: "var(--tab-inactive)", color: "var(--tab-inactive-text)", fontSize: 11, fontWeight: 500, cursor: resetting ? "wait" : "pointer", opacity: resetting ? 0.5 : 0.7, marginLeft: "auto" }}>
+          {resetting ? "Resetting..." : "Reset Stream"}
+        </button>
+      </div>
       <HLSPlayer key={activeCam.id} hlsUrl={activeCam.hlsUrl} snapshotUrl={activeCam.snapshotUrl} onStatusChange={setStreamStatus} />
       {camStatus && (
         <div style={{ display: "flex", gap: 10, marginTop: 12, flexWrap: "wrap" }}>
@@ -184,6 +196,9 @@ export default function PlantCam() {
       <div style={{ marginTop: 20, background: "var(--card)", border: "1px solid var(--border)", borderRadius: 12, padding: 16 }}>
         <h3 style={{ fontSize: 14, fontWeight: 700, color: "var(--text-bold)", marginBottom: 8 }}>Sensor Readings</h3>
         <p style={{ fontSize: 12, color: "var(--text-sub)", margin: 0 }}>Soil moisture, temperature, and light sensors coming soon.</p>
+      </div>
+      <div style={{ marginTop: 16, fontSize: 10, color: "var(--text-muted)", textAlign: "right" }}>
+        frontend v{FRONTEND_VERSION}{backendVersion && ` / backend v${backendVersion}`}
       </div>
     </div>
   );
