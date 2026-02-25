@@ -2,6 +2,8 @@
 
 React frontend for a live plant camera and garden monitoring dashboard. Shows a real-time HLS video stream from a grow light setup, timelapse archive, and (eventually) sensor readings. Companion to [plant-backend](https://github.com/boredhero/plant-backend).
 
+**Live site:** [planting.martinospizza.dev](https://planting.martinospizza.dev)
+
 ## Live Stream Player
 
 The HLS player uses [hls.js](https://github.com/video-dev/hls.js/) with native Safari fallback. The stream comes from an MJPEG webcam on a RockPro64 SBC, transcoded to H.264 HLS via ffmpeg with Intel VAAPI hardware encoding on the server.
