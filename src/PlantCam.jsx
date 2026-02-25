@@ -4,7 +4,6 @@ import Hls from "hls.js";
 const STATUS_URL = "/api/cam/status";
 const TIMELAPSE_URL = "/api/timelapse";
 const INFO_URL = "/api/info";
-const FRONTEND_VERSION = __APP_VERSION__;
 
 function StatusDot({ status }) {
   const color = status === "live" ? "#22c55e" : status === "degraded" ? "#eab308" : status === "connecting" ? "#60a5fa" : "#ef4444";
@@ -207,11 +206,12 @@ export default function PlantCam() {
       </div>
       <div style={{ marginTop: 16, fontSize: 10, color: "var(--text-muted)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <span>
-          <a href="https://github.com/boredhero/plant-frontend" target="_blank" rel="noopener noreferrer" style={{ color: "var(--text-muted)", textDecoration: "none" }}>frontend</a>
+          {"source: "}
+          <a href="https://github.com/boredhero/plant-frontend" target="_blank" rel="noopener noreferrer" style={{ color: "var(--text-muted)", textDecoration: "underline", textUnderlineOffset: 2 }}>frontend</a>
           {" / "}
-          <a href="https://github.com/boredhero/plant-backend" target="_blank" rel="noopener noreferrer" style={{ color: "var(--text-muted)", textDecoration: "none" }}>backend</a>
+          <a href="https://github.com/boredhero/plant-backend" target="_blank" rel="noopener noreferrer" style={{ color: "var(--text-muted)", textDecoration: "underline", textUnderlineOffset: 2 }}>backend</a>
         </span>
-        <span>{backendVersion && backendVersion === FRONTEND_VERSION ? `v${FRONTEND_VERSION}` : `frontend v${FRONTEND_VERSION}${backendVersion ? ` / backend v${backendVersion}` : ""}`}</span>
+        {backendVersion && <span>v{backendVersion}</span>}
       </div>
     </div>
   );

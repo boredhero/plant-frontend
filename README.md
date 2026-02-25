@@ -6,7 +6,7 @@ React frontend for a live plant camera and garden monitoring dashboard. Shows a 
 
 ## Live Stream Player
 
-The HLS player uses [hls.js](https://github.com/video-dev/hls.js/) with native Safari fallback. The stream comes from an MJPEG webcam on a RockPro64 SBC, transcoded to H.264 HLS via ffmpeg with Intel VAAPI hardware encoding on the server.
+The HLS player uses [hls.js](https://github.com/video-dev/hls.js/) with native Safari fallback. Multiple cameras are supported with a switcher UI -- each stream comes from a USB webcam on a RockPro64 SBC, transcoded to H.264 HLS via ffmpeg with AMD VAAPI hardware encoding on the server. A "Reset Stream" button clears the temporal filter buffer after camera repositioning (rate-limited per IP with exponential backoff).
 
 ### Live Edge Management
 
@@ -18,7 +18,7 @@ The `backBufferLength` is set to 2 seconds (one segment) so there's almost no st
 
 ## Timelapse Archive
 
-Fetches daily and weekly timelapse videos from the backend API. Videos are served as static MP4s through nginx. The archive section only renders when videos exist -- no empty states cluttering the UI.
+Fetches daily and weekly timelapse videos from the backend API, labeled per camera. Videos are served as static MP4s through nginx. The archive section only renders when videos exist -- no empty states cluttering the UI.
 
 ## Deployment
 
