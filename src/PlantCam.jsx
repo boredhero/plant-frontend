@@ -43,21 +43,42 @@ function HLSPlayer({ onStatusChange }) {
       setLoading(false);
       return;
     }
-    const hls = new Hls({ liveSyncDurationCount: 5, liveMaxLatencyDurationCount: 15, liveDurationInfinity: true, maxBufferLength: 30, maxMaxBufferLength: 60, maxBufferSize: 30 * 1024 * 1024, enableWorker: true, lowLatencyMode: false, backBufferLength: 30 });
+    const hls = new Hls({ liveSyncDurationCount: 3, liveMaxLatencyDurationCount: 10, liveDurationInfinity: true, maxBufferLength: 30, maxMaxBufferLength: 60, maxBufferSize: 30 * 1024 * 1024, enableWorker: true, lowLatencyMode: false, backBufferLength: 30, startFragPrefetch: true, fragLoadingMaxRetry: 6, fragLoadingRetryDelay: 500, manifestLoadingMaxRetry: 6, levelLoadingMaxRetry: 6 });
     hlsRef.current = hls;
     hls.loadSource(HLS_URL);
     hls.attachMedia(video);
     hls.on(Hls.Events.MANIFEST_PARSED, () => { setLoading(false); onStatusChange?.("live"); video.play().catch(() => {}); });
     hls.on(Hls.Events.ERROR, (_event, data) => {
       if (data.fatal) {
+        if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
+          hls.recoverMediaError();
+          return;
+        }
+        if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
+          hls.startLoad();
+          setTimeout(() => { if (hlsRef.current === hls) initHls(); }, 8000);
+          return;
+        }
         setError("stream_error");
         setLoading(false);
         onStatusChange?.("offline");
-        if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
-          setTimeout(() => initHls(), 5000);
-        }
       }
     });
+    let stallCount = 0;
+    video.addEventListener("waiting", () => {
+      stallCount++;
+      if (stallCount > 3 && hls.media) {
+        const buffered = hls.media.buffered;
+        if (buffered.length > 0) {
+          const pos = hls.media.currentTime;
+          for (let i = 0; i < buffered.length; i++) {
+            if (buffered.start(i) > pos && buffered.start(i) - pos < 2) { hls.media.currentTime = buffered.start(i) + 0.1; break; }
+          }
+        }
+        stallCount = 0;
+      }
+    });
+    video.addEventListener("playing", () => { stallCount = 0; });
   }, [onStatusChange]);
   useEffect(() => {
     initHls();
