@@ -211,7 +211,7 @@ export default function PlantCam() {
               })}
             </div>
             {selectedTL && (
-              <video src={selectedTL.url} controls style={{ width: "100%", borderRadius: 12, background: "#000", marginTop: 12 }} />
+              <video src={selectedTL.url} controls preload="auto" style={{ width: "100%", borderRadius: 12, background: "#000", marginTop: 12 }} />
             )}
           </div>
         );
