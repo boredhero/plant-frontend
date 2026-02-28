@@ -168,38 +168,54 @@ export default function PlantCam() {
           )}
         </div>
       )}
-      {(weeklyTL.length > 0 || dailyTL.length > 0) && (
-        <div style={{ marginTop: 20 }}>
-          <h3 style={{ fontSize: 14, fontWeight: 700, color: "var(--text-bold)", marginBottom: 10 }}>Timelapse Archive</h3>
-          {weeklyTL.length > 0 && (
-            <div style={{ marginBottom: 10 }}>
-              <span style={{ fontSize: 11, fontWeight: 600, color: "var(--text-sub)", marginBottom: 6, display: "block" }}>Weekly</span>
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                {weeklyTL.map(tl => (
-                  <button key={tl.url} onClick={() => setSelectedTL(selectedTL?.url === tl.url ? null : tl)} style={{ padding: "6px 12px", borderRadius: 8, border: selectedTL?.url === tl.url ? "2px solid var(--tab-active)" : "1px solid var(--chip-border)", background: selectedTL?.url === tl.url ? "var(--tab-active)" : "var(--tab-inactive)", color: selectedTL?.url === tl.url ? "var(--tab-active-text)" : "var(--tab-inactive-text)", fontSize: 12, fontWeight: 500, cursor: "pointer" }}>
-                    {tl.cam && <span style={{ opacity: 0.5, fontSize: 10, marginRight: 4 }}>[{tl.cam}]</span>}{tl.label} <span style={{ opacity: 0.6, fontSize: 10 }}>({tl.size_mb}MB)</span>
-                  </button>
-                ))}
-              </div>
+      {(weeklyTL.length > 0 || dailyTL.length > 0) && (() => {
+        const camIds = [...new Set([...dailyTL, ...weeklyTL].map(t => t.cam_id).filter(Boolean))].sort();
+        const camLabels = {};
+        [...dailyTL, ...weeklyTL].forEach(t => { if (t.cam_id) camLabels[t.cam_id] = t.cam; });
+        return (
+          <div style={{ marginTop: 20 }}>
+            <h3 style={{ fontSize: 14, fontWeight: 700, color: "var(--text-bold)", marginBottom: 10 }}>Timelapse Archive</h3>
+            <div style={{ display: "grid", gridTemplateColumns: camIds.length > 1 ? "1fr 1fr" : "1fr", gap: 16 }}>
+              {camIds.map(camId => {
+                const camDaily = dailyTL.filter(t => t.cam_id === camId);
+                const camWeekly = weeklyTL.filter(t => t.cam_id === camId);
+                return (
+                  <div key={camId} style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 10, padding: 12 }}>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: "var(--text-bold)", display: "block", marginBottom: 8 }}>{camLabels[camId] || `Camera ${camId}`}</span>
+                    {camWeekly.length > 0 && (
+                      <div style={{ marginBottom: 8 }}>
+                        <span style={{ fontSize: 10, fontWeight: 600, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>Weekly</span>
+                        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                          {camWeekly.map(tl => (
+                            <button key={tl.url} onClick={() => setSelectedTL(selectedTL?.url === tl.url ? null : tl)} style={{ padding: "4px 10px", borderRadius: 6, border: selectedTL?.url === tl.url ? "2px solid var(--tab-active)" : "1px solid var(--chip-border)", background: selectedTL?.url === tl.url ? "var(--tab-active)" : "var(--tab-inactive)", color: selectedTL?.url === tl.url ? "var(--tab-active-text)" : "var(--tab-inactive-text)", fontSize: 11, fontWeight: 500, cursor: "pointer" }}>
+                              {tl.label} <span style={{ opacity: 0.5, fontSize: 9 }}>({tl.size_mb}MB)</span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {camDaily.length > 0 && (
+                      <div>
+                        <span style={{ fontSize: 10, fontWeight: 600, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>Daily</span>
+                        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                          {camDaily.map(tl => (
+                            <button key={tl.url} onClick={() => setSelectedTL(selectedTL?.url === tl.url ? null : tl)} style={{ padding: "4px 10px", borderRadius: 6, border: selectedTL?.url === tl.url ? "2px solid var(--tab-active)" : "1px solid var(--chip-border)", background: selectedTL?.url === tl.url ? "var(--tab-active)" : "var(--tab-inactive)", color: selectedTL?.url === tl.url ? "var(--tab-active-text)" : "var(--tab-inactive-text)", fontSize: 11, fontWeight: 500, cursor: "pointer" }}>
+                              {tl.date} <span style={{ opacity: 0.5, fontSize: 9 }}>({tl.size_mb}MB)</span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
-          )}
-          {dailyTL.length > 0 && (
-            <div style={{ marginBottom: 10 }}>
-              <span style={{ fontSize: 11, fontWeight: 600, color: "var(--text-sub)", marginBottom: 6, display: "block" }}>Daily</span>
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                {dailyTL.map(tl => (
-                  <button key={tl.url} onClick={() => setSelectedTL(selectedTL?.url === tl.url ? null : tl)} style={{ padding: "6px 12px", borderRadius: 8, border: selectedTL?.url === tl.url ? "2px solid var(--tab-active)" : "1px solid var(--chip-border)", background: selectedTL?.url === tl.url ? "var(--tab-active)" : "var(--tab-inactive)", color: selectedTL?.url === tl.url ? "var(--tab-active-text)" : "var(--tab-inactive-text)", fontSize: 12, fontWeight: 500, cursor: "pointer" }}>
-                    {tl.cam && <span style={{ opacity: 0.5, fontSize: 10, marginRight: 4 }}>[{tl.cam}]</span>}{tl.date} <span style={{ opacity: 0.6, fontSize: 10 }}>({tl.size_mb}MB)</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-          {selectedTL && (
-            <video src={selectedTL.url} controls style={{ width: "100%", borderRadius: 12, background: "#000" }} />
-          )}
-        </div>
-      )}
+            {selectedTL && (
+              <video src={selectedTL.url} controls preload="auto" style={{ width: "100%", borderRadius: 12, background: "#000", marginTop: 12 }} />
+            )}
+          </div>
+        );
+      })()}
       <div style={{ marginTop: 20, background: "var(--card)", border: "1px solid var(--border)", borderRadius: 12, padding: 16, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: 80 }}>
         <h3 style={{ fontSize: 14, fontWeight: 700, color: "var(--text-bold)", marginBottom: 4, margin: 0 }}>Sensor Readings</h3>
         <p style={{ fontSize: 12, color: "var(--text-sub)", margin: "4px 0 0 0" }}>Soil moisture, temperature, and light sensors coming soon.</p>
