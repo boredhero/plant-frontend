@@ -509,7 +509,7 @@ export default function MasterPlan() {
             {dark ? "☀️ Light" : "🌙 Dark"}
           </button>
         </div>
-        <h1 style={{ fontSize: 22, fontWeight: 700, color: "var(--text-bold)", margin: 0 }}>🌱 2026 Master Garden Plan</h1>
+        <h1 style={{ fontSize: 22, fontWeight: 700, color: "var(--text-bold)", margin: 0 }}>🌱 2026 Garden Plan</h1>
         <p style={{ color: "var(--text-sub)", fontSize: 14, margin: "4px 0" }}>Zone 6b · Last frost: ~{FROST_DATE} · Today: {new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</p>
       </div>
 
