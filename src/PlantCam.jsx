@@ -39,7 +39,7 @@ function HLSPlayer({ hlsUrl, snapshotUrl, onStatusChange }) {
       setLoading(false);
       return;
     }
-    const hls = new Hls({ liveSyncDurationCount: 3, liveMaxLatencyDurationCount: 8, liveDurationInfinity: true, maxBufferLength: 30, maxMaxBufferLength: 60, maxBufferSize: 30 * 1024 * 1024, enableWorker: true, lowLatencyMode: false, backBufferLength: 2, startFragPrefetch: true, fragLoadingMaxRetry: 6, fragLoadingRetryDelay: 500, manifestLoadingMaxRetry: 6, levelLoadingMaxRetry: 6 });
+    const hls = new Hls({ liveSyncDurationCount: 3, liveMaxLatencyDurationCount: 8, liveDurationInfinity: true, maxBufferLength: 30, maxMaxBufferLength: 60, maxBufferSize: 30 * 1024 * 1024, enableWorker: true, lowLatencyMode: false, backBufferLength: 2, startFragPrefetch: true, fragLoadingMaxRetry: Infinity, fragLoadingRetryDelay: 1000, manifestLoadingMaxRetry: Infinity, levelLoadingMaxRetry: Infinity });
     hlsRef.current = hls;
     hls.loadSource(hlsUrl);
     hls.attachMedia(video);
@@ -65,7 +65,9 @@ function HLSPlayer({ hlsUrl, snapshotUrl, onStatusChange }) {
   }, [hlsUrl, onStatusChange]);
   useEffect(() => {
     initHls();
-    return () => { if (hlsRef.current) { clearInterval(hlsRef.current._liveCheckInterval); hlsRef.current.destroy(); } };
+    const onVisible = () => { if (document.visibilityState === "visible" && hlsRef.current) initHls(); };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => { document.removeEventListener("visibilitychange", onVisible); if (hlsRef.current) { clearInterval(hlsRef.current._liveCheckInterval); hlsRef.current.destroy(); } };
   }, [initHls]);
   if (error === "hls_unsupported") {
     return (
